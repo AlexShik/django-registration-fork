@@ -4,7 +4,12 @@ Forms and validation code for user registration.
 """
 
 
-from django.contrib.auth.models import User
+try:
+    from django.contrib.auth import get_user_model
+except ImportError:  # django < 1.5
+    from django.contrib.auth.models import User
+else:
+    User = get_user_model()
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 
@@ -41,7 +46,7 @@ class RegistrationForm(forms.Form):
                                 label=_("Password"))
     password2 = forms.CharField(widget=forms.PasswordInput(attrs=attrs_dict, render_value=False),
                                 label=_("Password (again)"))
-    
+
     def clean_username(self):
         """
         Validate that the username is alphanumeric and is not already
@@ -110,7 +115,7 @@ class RegistrationFormNoFreeEmail(RegistrationForm):
                    'googlemail.com', 'hotmail.com', 'hushmail.com',
                    'msn.com', 'mail.ru', 'mailinator.com', 'live.com',
                    'yahoo.com']
-    
+
     def clean_email(self):
         """
         Check the supplied email address against a list of known free
