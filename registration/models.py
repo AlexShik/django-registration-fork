@@ -3,7 +3,12 @@ import random
 import re
 
 from django.conf import settings
-from django.contrib.auth.models import User
+try:
+    from django.contrib.auth import get_user_model
+except ImportError:  # django < 1.5
+    from django.contrib.auth.models import User
+else:
+    User = get_user_model()
 from django.db import models
 from django.db import transaction
 from django.template.loader import render_to_string
@@ -58,7 +63,7 @@ class RegistrationManager(models.Manager):
                 profile.save()
                 return user
         return False
-    
+
     def create_inactive_user(self, username, email, password,
                              site, send_email=True):
         """
@@ -96,10 +101,10 @@ class RegistrationManager(models.Manager):
         username = user.username
         if isinstance(username, unicode):
             username = username.encode('utf-8')
-        activation_key = sha_constructor(salt+username).hexdigest()
+        activation_key = sha_constructor(salt + username).hexdigest()
         return self.create(user=user,
                            activation_key=activation_key)
-        
+
     def delete_expired_users(self):
         """
         Remove expired instances of ``RegistrationProfile`` and their
@@ -164,19 +169,19 @@ class RegistrationProfile(models.Model):
     
     """
     ACTIVATED = u"ALREADY_ACTIVATED"
-    
+
     user = models.ForeignKey(User, unique=True, verbose_name=_('user'))
     activation_key = models.CharField(_('activation key'), max_length=40)
-    
+
     objects = RegistrationManager()
-    
+
     class Meta:
         verbose_name = _('registration profile')
         verbose_name_plural = _('registration profiles')
-    
+
     def __unicode__(self):
         return u"Registration information for %s" % self.user
-    
+
     def activation_key_expired(self):
         """
         Determine whether this ``RegistrationProfile``'s activation
@@ -249,9 +254,9 @@ class RegistrationProfile(models.Model):
                                    ctx_dict)
         # Email subject *must not* contain newlines
         subject = ''.join(subject.splitlines())
-        
+
         message = render_to_string('registration/activation_email.txt',
                                    ctx_dict)
-        
+
         self.user.email_user(subject, message, settings.DEFAULT_FROM_EMAIL)
-    
+
