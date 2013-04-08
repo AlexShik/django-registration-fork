@@ -7,8 +7,9 @@ Views which allow users to create and activate accounts.
 from django.shortcuts import redirect
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-
+from django.contrib.auth import authenticate, login
 from registration.backends import get_backend
+from django.core.urlresolvers import reverse_lazy
 
 
 def activate(request, backend,
@@ -73,8 +74,10 @@ def activate(request, backend,
     """
     backend = get_backend(backend)
     account = backend.activate(request, **kwargs)
-
     if account:
+        success_url = reverse_lazy('core:profile')
+        user = authenticate(account=account)
+        login(request, user)
         if success_url is None:
             to, args, kwargs = backend.post_activation_redirect(request, account)
             return redirect(to, *args, **kwargs)
