@@ -10,7 +10,9 @@ from django.template import RequestContext
 from django.contrib.auth import authenticate, login
 from registration.backends import get_backend
 from django.core.urlresolvers import reverse_lazy
-
+from django.contrib.sites.models import get_current_site
+from django.template.loader import render_to_string
+from django.conf import settings
 
 def activate(request, backend,
              template_name='registration/activate.html',
@@ -78,6 +80,16 @@ def activate(request, backend,
         success_url = reverse_lazy('core:profile')
         user = authenticate(account=account)
         login(request, user)
+        site = get_current_site(request)
+        ctx_dict = {'user': account,
+                    'site': site}
+        subject = render_to_string('registration/registered_email_subject.txt',
+                                   ctx_dict)
+        # Email subject *must not* contain newlines
+        subject = ''.join(subject.splitlines())
+        message = render_to_string('registration/registered_email.txt',
+                                   ctx_dict)
+        account.email_user(subject, message, settings.DEFAULT_FROM_EMAIL)
         if success_url is None:
             to, args, kwargs = backend.post_activation_redirect(request, account)
             return redirect(to, *args, **kwargs)
